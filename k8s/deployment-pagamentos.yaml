@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: pagamentos
+
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: pagamentos
+
+  template:
+    metadata:
+      labels:
+        app: pagamentos
+
+    spec:
+      containers:
+      - name: pagamentos
+        image: pedidos_veloz-pagamentos:1.0.0
+        ports:
+        - containerPort: 3002
+        envFrom:
+        - configMapRef:
+            name: pedidos-config
+        - secretRef:
+            name: pedidos-secret
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3002
+          initialDelaySeconds: 10
+          periodSeconds: 20

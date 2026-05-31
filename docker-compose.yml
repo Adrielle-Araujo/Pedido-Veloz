@@ -1,0 +1,69 @@
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - app_net
+
+  gateway:
+    build: ./gateway
+    image: pedidos_veloz-gateway:1.0.0
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - app_net
+
+  pedidos:
+    build: ./pedidos
+    image: pedidos_veloz-pedidos:1.0.0
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    networks:
+      - app_net
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+  pagamentos:
+    build: ./pagamentos
+    image: pedidos_veloz-pagamentos:1.0.0
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+    networks:
+      - app_net
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+  estoque:
+    build: ./estoque
+    image: pedidos_veloz-estoque:1.0.0
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+    networks:
+      - app_net
+    volumes:
+      - estoque_data:/var/lib/estoque
+    depends_on:
+      - rabbitmq
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+
+volumes:
+  estoque_data:
+
+networks:
+  app_net:
+    driver: bridge
